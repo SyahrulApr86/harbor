@@ -1,0 +1,5 @@
+downloads/
+installer/
+data/
+log/
+.env
