@@ -13,6 +13,7 @@ It is designed for this host, where:
 - Harbor frontend listens on internal port `8080`
 - Harbor advertises `external_url=https://harbor.precia.site`
 - TLS is expected to terminate at the reverse proxy, not inside Harbor itself
+- Generated Harbor services default to Docker `json-file` logging to avoid reboot races against Harbor's internal syslog listener
 - The official Harbor `prepare` step is used to generate Harbor's upstream `docker-compose.yml`
 - The day-to-day lifecycle is then managed with `docker compose`
 - The Harbor frontend joins the external Docker network configured by `HARBOR_PROXY_NETWORK` and is exposed there with alias `HARBOR_PROXY_ALIAS`
@@ -34,6 +35,7 @@ It is designed for this host, where:
    - `HARBOR_EXTERNAL_URL`
    - `HARBOR_ADMIN_PASSWORD`
    - `HARBOR_DB_PASSWORD`
+   - `HARBOR_LOG_DRIVER` if you prefer `local` instead of the default `json-file`
    - `HARBOR_PROXY_NETWORK` if your reverse proxy uses a different Docker network name
 2. Create the persistent host paths configured in [`.env`](./.env). The defaults point to user-writable directories inside this folder, so `sudo` is usually not needed:
 
@@ -119,5 +121,6 @@ docker pull harbor.precia.site/apps/alpine-test:3.20
 - Harbor must not use `localhost` or `127.0.0.1` as its hostname.
 - If you change the data or log paths back to something like `/srv/...`, you may need `sudo` to create or manage those directories.
 - If you change `HARBOR_PROXY_NETWORK` or `HARBOR_PROXY_ALIAS`, run [`compose-down.sh`](./compose-down.sh) and then [`compose-up.sh`](./compose-up.sh) so the generated Compose file is rebuilt.
+- If you change `HARBOR_LOG_DRIVER`, run [`compose-down.sh`](./compose-down.sh) and then [`compose-up.sh`](./compose-up.sh) so the generated Compose file is rebuilt with the new logging driver.
 - This scaffold intentionally does not auto-run Harbor in this turn, because the official prepare step will generate and then start a large multi-container stack.
 - If you want, the next step is to run [compose-up.sh](./compose-up.sh) and then wire `harbor.precia.site` into Nginx Proxy Manager.

@@ -101,17 +101,25 @@ docker run --rm \
 # ===== Patch docker-compose =====
 echo "[INFO] Patching docker-compose..."
 
-export HARBOR_HTTP_PORT HARBOR_PROXY_ALIAS HARBOR_PROXY_NETWORK
+export HARBOR_HTTP_PORT HARBOR_PROXY_ALIAS HARBOR_PROXY_NETWORK HARBOR_LOG_DRIVER
 
 perl -0pi -e '
   my $port = $ENV{HARBOR_HTTP_PORT};
   my $alias = $ENV{HARBOR_PROXY_ALIAS};
   my $network = $ENV{HARBOR_PROXY_NETWORK};
+  my $log_driver = $ENV{HARBOR_LOG_DRIVER} || "json-file";
+
+  my $logging_block = qq(    logging:\n      driver: "$log_driver"\n);
+  if ($log_driver eq "json-file") {
+    $logging_block .= qq(      options:\n        max-size: "50m"\n        max-file: "5"\n);
+  }
 
   s/container_name: nginx/container_name: $alias/;
 
   s/\n    networks:\n      - harbor\n    ports:\n      - \Q$port:$port\E\n/
     \n    networks:\n      harbor:\n      $network:\n        aliases:\n          - $alias\n/s;
+
+  s/\n    logging:\n      driver: "syslog"\n      options:\n        syslog-address: "tcp:\/\/localhost:1514"\n        tag: "[^"]+"\n/\n$logging_block/sg;
 
   s/\nnetworks:\n  harbor:\n    external: false\n/
     \nnetworks:\n  harbor:\n    external: false\n  $network:\n    external: true\n/s;
